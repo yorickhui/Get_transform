@@ -30,8 +30,12 @@ GET笔记是一款优秀的国产AI笔记软件，在移动端收集小红书、
 ## 使用方法
 
 ### 1. 基本使用
-**步骤1：复制文件目录，安装运行必须软件**
-从Github下载Get_transform复制到你电脑任意本地文件夹，并且需要安装Python
+**步骤1：准备工作**
+请先安装Python，下载请至https://www.python.org/
+然后从Github下载Get_transform文件夹复制到你电脑任意位置
+自己在Get_transform文件夹内新建二个空文件夹 history 和 new ，注意都是小写
+history：用于存储Get笔记导出的文件
+new：用于存储重命名后的文件
 
 **步骤2：导出笔记复制到history目录下**
 将Get笔记导出的文件解压，将笔记文件夹（如：voicenotes_202510171604_getnotes_archive_1a3c7e29c001780cSbq7Nd0C）完整粘贴到history目录下。注意需要包含notes文件夹和index.html
