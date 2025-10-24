@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/banner.png" width="600">
+  <img src="/banner.png" width="600">
 </p>
 
 # Get_transform
