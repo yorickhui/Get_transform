@@ -1,7 +1,6 @@
 <p align="center">
   <img src="/banner.png" width="600">
 </p>
-![GitHub last commit](https://img.shields.io/github/last-commit/yourname/yourrepo](https://img.shields.io/badge/Python-blue)
 
 # Get_transform
 这是一款Get笔记导出文件处理脚本，让导出的Get笔记命名不再是乱码，方便导入其他笔记软件
