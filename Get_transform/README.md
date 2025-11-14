@@ -35,18 +35,35 @@ cd "c:\Your_file\Get_transform"
 ```
 
 **步骤5：运行启动脚本（推荐）**
-```在powershell中运行以下命令
+```在Windows PowerShell中运行以下命令
 python launch.py
+```
+```在macOS/Linux终端中运行以下命令
+python3 launch.py
 ```
 启动脚本会自动检查Python版本、安装缺失的依赖，然后启动主程序。
 
 **或者直接运行主程序**
-```在powershell中运行以下命令
+```在Windows PowerShell中运行以下命令
 python duplicate_file_cleaner.py
 ```
+```在macOS/Linux终端中运行以下命令
+python3 duplicate_file_cleaner.py
+```
 > **注意**：直接运行主程序需要确保已安装Python 3.6+和beautifulsoup4依赖包。
+> 如果提示缺少依赖，请运行 `pip install beautifulsoup4` 或 `pip3 install beautifulsoup4`
 
 > **注意**：请确保已安装Python 3.6+，并且Python已添加到系统PATH环境变量中。
+
+### 依赖自检说明
+运行 `launch.py` 时，脚本会自动执行以下检查：
+- ✅ Python 版本检测（最低 3.6）
+- ✅ pip 可用性检测
+- ✅ 自动创建/读取 `requirements.txt`
+- ✅ 自动检测并安装缺失依赖（默认包含 `beautifulsoup4`）
+- ✅ 在 Windows / macOS / Linux 环境下工作
+
+如果由于权限或网络问题导致自动安装失败，脚本会提供手动安装指引。你也可以自行编辑 `requirements.txt` 以添加更多依赖，然后重新运行 `launch.py`。
 
 ### 2. 操作选项
 

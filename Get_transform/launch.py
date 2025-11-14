@@ -21,6 +21,7 @@ class DependencyChecker:
         self.min_python_version = (3, 6)
         self.requirements_file = Path(__file__).parent / "requirements.txt"
         self.main_script = Path(__file__).parent / "duplicate_file_cleaner.py"
+        self.default_dependencies = ["beautifulsoup4"]
         
     def check_python_version(self):
         """检查Python版本"""
@@ -58,16 +59,34 @@ class DependencyChecker:
             print(f"❌ pip 检查失败: {e}")
             return False
     
+    def create_requirements_file(self):
+        """创建requirements.txt文件（如果不存在）"""
+        if not self.requirements_file.exists():
+            print("⚠️  requirements.txt 文件不存在，正在创建...")
+            try:
+                with open(self.requirements_file, 'w', encoding='utf-8') as f:
+                    f.write("# Get_transform 依赖包\n")
+                    for dep in self.default_dependencies:
+                        f.write(f"{dep}\n")
+                print(f"✅ 已创建 requirements.txt 文件，包含依赖: {', '.join(self.default_dependencies)}")
+                return True
+            except Exception as e:
+                print(f"❌ 创建 requirements.txt 失败: {e}")
+                return False
+        return True
+    
     def read_requirements(self):
         """读取requirements.txt文件"""
-        if not self.requirements_file.exists():
-            print("❌ requirements.txt 文件不存在")
+        if not self.create_requirements_file():
             return []
         
         try:
             with open(self.requirements_file, 'r', encoding='utf-8') as f:
                 requirements = [line.strip() for line in f if line.strip() and not line.startswith('#')]
-            print(f"📋 发现依赖包: {', '.join(requirements)}")
+            if requirements:
+                print(f"📋 发现依赖包: {', '.join(requirements)}")
+            else:
+                print("⚠️  requirements.txt 中未列出任何依赖包")
             return requirements
         except Exception as e:
             print(f"❌ 读取requirements.txt失败: {e}")
@@ -211,7 +230,18 @@ class DependencyChecker:
         # 3. 读取依赖列表
         requirements = self.read_requirements()
         if not requirements:
-            print("\n⚠️  未发现依赖要求，直接启动主程序")
+            print("\n⚠️  未在 requirements.txt 中检测到依赖，将使用默认依赖进行检查。")
+            requirements = self.default_dependencies.copy()
+        else:
+            missing_defaults = [dep for dep in self.default_dependencies if dep not in requirements]
+            if missing_defaults:
+                requirements.extend(missing_defaults)
+                print(f"\nℹ️  已自动添加默认依赖: {', '.join(missing_defaults)}")
+        requirements = list(dict.fromkeys(requirements))
+        if requirements:
+            print(f"\n📦 最终依赖列表: {', '.join(requirements)}")
+        else:
+            print("\n⚠️  未配置任何依赖，将直接尝试启动主程序。")
             self.launch_main_script()
             return
         
