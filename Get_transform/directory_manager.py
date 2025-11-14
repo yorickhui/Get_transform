@@ -9,6 +9,7 @@
 """
 
 import os
+import sys
 import json
 import shutil
 import zipfile
@@ -273,7 +274,7 @@ class DirectoryManager:
                 
             elif choice == "4":
                 print("👋 退出程序")
-                return None
+                sys.exit(0)
                 
             else:
                 print("❌ 无效选择，请输入 1-4")
