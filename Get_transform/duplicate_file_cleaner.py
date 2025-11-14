@@ -34,7 +34,10 @@ class DuplicateFileCleaner:
         
     def setup_logging(self):
         """设置日志记录"""
-        log_file = self.history_dir.parent / f"file_cleaner_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
+        logs_dir = self.history_dir.parent / "logs"
+        logs_dir.mkdir(parents=True, exist_ok=True)
+        
+        log_file = logs_dir / f"file_cleaner_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
         
         logging.basicConfig(
             level=logging.INFO,
@@ -598,22 +601,25 @@ class DuplicateFileCleaner:
 
 def main():
     """主函数"""
+    from directory_manager import DirectoryManager
+    
     # 获取脚本所在目录
     script_dir = Path(__file__).parent.absolute()
     
-    # 配置相对路径
-    history_dir = script_dir / "history"
-    new_dir = script_dir / "new"
+    # 初始化目录管理器
+    dir_manager = DirectoryManager(script_dir)
     
-    # 检查history目录是否存在
-    if not history_dir.exists():
-        print(f"错误: 未找到history目录: {history_dir}")
-        print(f"请确保在包含history文件夹的目录中运行此脚本")
+    # 执行首次运行初始化
+    if not dir_manager.initialize_on_first_run():
+        print("\n程序退出")
         return
+    
+    # 配置相对路径
+    history_dir = dir_manager.history_dir
+    new_dir = dir_manager.new_dir
     
     # 创建清理器实例
     cleaner = DuplicateFileCleaner(str(history_dir), str(new_dir))
-    
     print("智能文件清理和复制工具")
     print("=" * 60)
     print("此工具将根据文件夹数量自动选择处理模式:")

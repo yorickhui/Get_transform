@@ -78,6 +78,9 @@ Thumbs.db
 *.log
 
 # Project specific
-history/
-new/
+Get_transform/history/
+Get_transform/new/
+Get_transform/logs/
+Get_transform/config.json
+Get_transform/temp_extract/
 file_cleaner_*.log
