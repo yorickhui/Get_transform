@@ -33,10 +33,18 @@ GET笔记是一款优秀的国产AI笔记软件，在移动端收集小红书、
 ```把下面地址替换成你的存放目录，在powershell中运行以下命令
 cd "c:\Your_file\Get_transform"
 ```
-**步骤5：运行脚本**
+
+**步骤5：运行启动脚本（推荐）**
+```在powershell中运行以下命令
+python launch.py
+```
+启动脚本会自动检查Python版本、安装缺失的依赖，然后启动主程序。
+
+**或者直接运行主程序**
 ```在powershell中运行以下命令
 python duplicate_file_cleaner.py
 ```
+> **注意**：直接运行主程序需要确保已安装Python 3.6+和beautifulsoup4依赖包。
 
 > **注意**：请确保已安装Python 3.6+，并且Python已添加到系统PATH环境变量中。
 
@@ -80,9 +88,12 @@ python duplicate_file_cleaner.py
 ## 技术细节
 
 - **语言**：Python 3.6+
-- **依赖**：仅使用标准库，无需额外安装
+- **依赖**：beautifulsoup4（启动脚本会自动安装）
 - **兼容性**：Windows/Linux/macOS
 - **编码**：UTF-8，支持中文路径和文件名
+- **启动方式**：
+  - 推荐：`python launch.py`（自动检查环境和依赖）
+  - 直接：`python duplicate_file_cleaner.py`（需手动安装依赖）
 
 ## 版本信息
 
