@@ -171,6 +171,28 @@ class DependencyChecker:
             else:
                 print("请输入 y(是)/n(否)/s(跳过)")
     
+    def initialize_directories(self):
+        """初始化目录结构"""
+        try:
+            from directory_manager import DirectoryManager
+            
+            print("\n" + "=" * 50)
+            dir_manager = DirectoryManager(Path(__file__).parent)
+            success = dir_manager.initialize_on_first_run()
+            
+            if not success:
+                print("\n⚠️  目录初始化未完成")
+                print("如需帮助，请参考程序文档")
+                proceed = input("\n是否仍要继续启动程序？(y/n): ").lower().strip()
+                if proceed not in ['y', 'yes', '是']:
+                    input("按回车键退出...")
+                    sys.exit(1)
+            
+            print("=" * 50)
+        except Exception as e:
+            print(f"\n⚠️  目录初始化出错: {e}")
+            print("将尝试继续启动程序...")
+    
     def launch_main_script(self):
         """启动主程序"""
         if not self.main_script.exists():
@@ -211,22 +233,23 @@ class DependencyChecker:
         # 3. 读取依赖列表
         requirements = self.read_requirements()
         if not requirements:
-            print("\n⚠️  未发现依赖要求，直接启动主程序")
-            self.launch_main_script()
-            return
+            print("\n⚠️  未发现依赖要求，继续初始化...")
+        else:
+            # 4. 检查已安装的包
+            missing_packages = self.check_installed_packages(requirements)
+            
+            # 5. 安装缺失的依赖
+            if not self.install_dependencies(missing_packages):
+                print("\n⚠️  依赖安装不完整，程序可能无法正常运行")
+                proceed = input("是否仍要继续启动程序？(y/n): ").lower().strip()
+                if proceed not in ['y', 'yes', '是']:
+                    input("按回车键退出...")
+                    sys.exit(1)
         
-        # 4. 检查已安装的包
-        missing_packages = self.check_installed_packages(requirements)
+        # 6. 初始化目录结构（在启动主程序前）
+        self.initialize_directories()
         
-        # 5. 安装缺失的依赖
-        if not self.install_dependencies(missing_packages):
-            print("\n⚠️  依赖安装不完整，程序可能无法正常运行")
-            proceed = input("是否仍要继续启动程序？(y/n): ").lower().strip()
-            if proceed not in ['y', 'yes', '是']:
-                input("按回车键退出...")
-                sys.exit(1)
-        
-        # 6. 启动主程序
+        # 7. 启动主程序
         self.launch_main_script()
 
 
