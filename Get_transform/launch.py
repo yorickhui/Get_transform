@@ -12,13 +12,15 @@ import sys
 import subprocess
 import os
 from pathlib import Path
+from config_manager import ConfigManager
 
 
 class InitializationManager:
     """目录初始化和路径配置管理"""
     
-    def __init__(self, script_dir):
+    def __init__(self, script_dir, config_manager: ConfigManager):
         self.script_dir = Path(script_dir)
+        self.config_manager = config_manager
         self.default_history_dir = self.script_dir / "history"
         self.new_dir = self.script_dir / "new"
         self.logs_dir = self.script_dir / "logs"
@@ -69,8 +71,21 @@ class InitializationManager:
         
         return True, None
     
-    def get_history_path(self):
+    def get_history_path(self, use_saved_config: bool = True):
         """获取并配置history路径"""
+        # 如果配置中已有history路径且允许使用
+        if use_saved_config:
+            saved_path = self.config_manager.get_history_dir()
+            if saved_path:
+                # 验证保存的路径是否仍然有效
+                is_valid, error_msg = self.validate_history_path(saved_path)
+                if is_valid:
+                    print(f"✅ 使用已保存的history路径: {saved_path}")
+                    return saved_path
+                else:
+                    print(f"⚠️  保存的路径无效: {error_msg}")
+                    print("需要重新配置...")
+        
         print("\n📁 配置GET导出路径")
         print("=" * 50)
         
@@ -110,13 +125,24 @@ class InitializationManager:
             else:
                 print("请输入 y(是) 或 n(否)")
     
-    def initialize(self):
+    def initialize(self, force_reconfigure: bool = False):
         """执行初始化流程"""
         # 创建必要的目录
         self.create_directories()
         
-        # 获取history路径
-        history_path = self.get_history_path()
+        # 获取history路径（如果强制重新配置，则不使用保存的配置）
+        history_path = self.get_history_path(use_saved_config=not force_reconfigure)
+        
+        # 保存配置
+        self.config_manager.set_history_dir(history_path)
+        self.config_manager.set_new_dir(str(self.new_dir))
+        self.config_manager.set_logs_dir(str(self.logs_dir))
+        
+        success, error = self.config_manager.save_config()
+        if success:
+            print(f"\n✅ 配置已保存到: {self.config_manager.config_file}")
+        else:
+            print(f"\n⚠️  配置保存失败: {error}")
         
         return history_path
 
@@ -278,7 +304,7 @@ class DependencyChecker:
             else:
                 print("请输入 y(是)/n(否)/s(跳过)")
     
-    def launch_main_script(self, history_path=None):
+    def launch_main_script(self, history_path=None, new_dir=None, logs_dir=None):
         """启动主程序"""
         if not self.main_script.exists():
             print(f"❌ 主脚本不存在: {self.main_script}")
@@ -288,10 +314,14 @@ class DependencyChecker:
         print("=" * 50)
         
         try:
-            # 准备环境变量，传递history路径
+            # 准备环境变量，传递配置路径
             env = os.environ.copy()
             if history_path:
                 env['GET_HISTORY_PATH'] = history_path
+            if new_dir:
+                env['GET_NEW_PATH'] = new_dir
+            if logs_dir:
+                env['GET_LOGS_PATH'] = logs_dir
             
             # 使用当前Python解释器运行主脚本
             os.execve(sys.executable, [sys.executable, str(self.main_script)], env)
@@ -338,21 +368,72 @@ class DependencyChecker:
                 input("按回车键退出...")
                 sys.exit(1)
         
-        # 6. 初始化目录和配置路径
+        # 6. 加载和初始化配置
         script_dir = Path(self.main_script).parent
-        initializer = InitializationManager(script_dir)
-        try:
-            history_path = initializer.initialize()
-        except KeyboardInterrupt:
-            print("\n\n👋 用户取消初始化")
-            sys.exit(0)
-        except Exception as e:
-            print(f"\n❌ 初始化失败: {e}")
-            input("按回车键退出...")
-            sys.exit(1)
+        config_manager = ConfigManager(script_dir)
         
-        # 7. 启动主程序（传递history路径）
-        self.launch_main_script(history_path)
+        # 尝试加载配置
+        config_loaded, error_msg = config_manager.load_config()
+        
+        if config_loaded:
+            print("\n✅ 配置文件加载成功")
+            config_manager.display_config()
+            
+            # 验证配置中的路径
+            paths_valid, validation_error = config_manager.validate_paths()
+            if not paths_valid:
+                print(f"\n⚠️  配置路径验证失败: {validation_error}")
+                print("需要重新配置...")
+                need_init = True
+            else:
+                # 询问是否使用现有配置
+                try:
+                    use_existing = input("\n是否使用现有配置? (y/n): ").strip().lower()
+                except EOFError:
+                    use_existing = 'y'
+                
+                need_init = use_existing not in ['y', 'yes', '是']
+        else:
+            print(f"\n⚠️  配置文件加载失败: {error_msg}")
+            
+            # 如果是文件损坏，尝试恢复
+            if "格式错误" in error_msg or "结构无效" in error_msg:
+                print("⚠️  检测到配置文件损坏，尝试恢复...")
+                recovered, recovery_msg = config_manager.recover_from_corruption()
+                if recovered:
+                    print(f"✅ {recovery_msg}")
+                else:
+                    print(f"❌ {recovery_msg}")
+            else:
+                # 配置文件不存在，创建默认配置
+                print("创建新的配置...")
+                config_manager.create_default_config()
+            
+            need_init = True
+        
+        # 执行初始化流程
+        if need_init:
+            initializer = InitializationManager(script_dir, config_manager)
+            try:
+                history_path = initializer.initialize(force_reconfigure=not config_loaded)
+            except KeyboardInterrupt:
+                print("\n\n👋 用户取消初始化")
+                sys.exit(0)
+            except Exception as e:
+                print(f"\n❌ 初始化失败: {e}")
+                input("按回车键退出...")
+                sys.exit(1)
+        else:
+            # 使用配置中的路径
+            history_path = config_manager.get_history_dir()
+            print(f"\n✅ 使用配置中的history路径: {history_path}")
+        
+        # 7. 启动主程序（传递配置）
+        self.launch_main_script(
+            history_path=history_path,
+            new_dir=config_manager.get_new_dir(),
+            logs_dir=config_manager.get_logs_dir()
+        )
 
 
 def main():
