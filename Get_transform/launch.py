@@ -14,6 +14,113 @@ import os
 from pathlib import Path
 
 
+class InitializationManager:
+    """目录初始化和路径配置管理"""
+    
+    def __init__(self, script_dir):
+        self.script_dir = Path(script_dir)
+        self.default_history_dir = self.script_dir / "history"
+        self.new_dir = self.script_dir / "new"
+        self.logs_dir = self.script_dir / "logs"
+    
+    def create_directories(self):
+        """创建必要的目录"""
+        directories = [
+            (self.default_history_dir, "history"),
+            (self.new_dir, "new"),
+            (self.logs_dir, "logs"),
+        ]
+        
+        print("\n🔧 初始化目录结构")
+        print("=" * 50)
+        
+        all_success = True
+        for dir_path, dir_name in directories:
+            try:
+                if dir_path.exists():
+                    print(f"✅ 目录已存在: {dir_name}/")
+                else:
+                    dir_path.mkdir(parents=True, exist_ok=True)
+                    print(f"✅ 目录创建成功: {dir_name}/")
+            except Exception as e:
+                print(f"❌ 目录创建失败 ({dir_name}/): {e}")
+                all_success = False
+        
+        if not all_success:
+            print("\n⚠️  部分目录创建失败，但程序将继续运行")
+        
+        return all_success
+    
+    def validate_history_path(self, path_str):
+        """验证history路径的有效性"""
+        path = Path(path_str).expanduser()
+        
+        # 检查路径是否存在
+        if not path.exists():
+            return False, f"路径不存在: {path}"
+        
+        # 检查是否是目录
+        if not path.is_dir():
+            return False, f"路径不是目录: {path}"
+        
+        # 检查是否可读
+        if not os.access(path, os.R_OK):
+            return False, f"无法读取路径（权限不足）: {path}"
+        
+        return True, None
+    
+    def get_history_path(self):
+        """获取并配置history路径"""
+        print("\n📁 配置GET导出路径")
+        print("=" * 50)
+        
+        default_path = str(self.default_history_dir)
+        print(f"默认路径: {default_path}")
+        
+        while True:
+            try:
+                choice = input("\n是否使用默认路径? (y/n): ").strip().lower()
+            except EOFError:
+                choice = 'y'  # 默认使用
+            
+            if choice in ['y', 'yes', '是']:
+                # 检查默认路径是否存在
+                if self.default_history_dir.exists() and self.default_history_dir.is_dir():
+                    print(f"✅ 使用默认路径: {default_path}")
+                    return str(self.default_history_dir)
+                else:
+                    print(f"⚠️  默认路径不存在或不是目录")
+                    continue
+            
+            elif choice in ['n', 'no', '否']:
+                custom_path = input("\n请输入自定义的history路径: ").strip()
+                
+                if not custom_path:
+                    print("❌ 路径不能为空")
+                    continue
+                
+                is_valid, error_msg = self.validate_history_path(custom_path)
+                if is_valid:
+                    print(f"✅ 路径验证成功: {custom_path}")
+                    return custom_path
+                else:
+                    print(f"❌ 路径验证失败: {error_msg}")
+                    print("请检查路径是否正确、存在且有读取权限")
+                    continue
+            else:
+                print("请输入 y(是) 或 n(否)")
+    
+    def initialize(self):
+        """执行初始化流程"""
+        # 创建必要的目录
+        self.create_directories()
+        
+        # 获取history路径
+        history_path = self.get_history_path()
+        
+        return history_path
+
+
 class DependencyChecker:
     """依赖检查和安装工具"""
     
@@ -171,7 +278,7 @@ class DependencyChecker:
             else:
                 print("请输入 y(是)/n(否)/s(跳过)")
     
-    def launch_main_script(self):
+    def launch_main_script(self, history_path=None):
         """启动主程序"""
         if not self.main_script.exists():
             print(f"❌ 主脚本不存在: {self.main_script}")
@@ -181,8 +288,13 @@ class DependencyChecker:
         print("=" * 50)
         
         try:
+            # 准备环境变量，传递history路径
+            env = os.environ.copy()
+            if history_path:
+                env['GET_HISTORY_PATH'] = history_path
+            
             # 使用当前Python解释器运行主脚本
-            os.execv(sys.executable, [sys.executable, str(self.main_script)])
+            os.execve(sys.executable, [sys.executable, str(self.main_script)], env)
         except Exception as e:
             print(f"❌ 启动主程序失败: {e}")
             print(f"请手动运行: python {self.main_script}")
@@ -226,8 +338,21 @@ class DependencyChecker:
                 input("按回车键退出...")
                 sys.exit(1)
         
-        # 6. 启动主程序
-        self.launch_main_script()
+        # 6. 初始化目录和配置路径
+        script_dir = Path(self.main_script).parent
+        initializer = InitializationManager(script_dir)
+        try:
+            history_path = initializer.initialize()
+        except KeyboardInterrupt:
+            print("\n\n👋 用户取消初始化")
+            sys.exit(0)
+        except Exception as e:
+            print(f"\n❌ 初始化失败: {e}")
+            input("按回车键退出...")
+            sys.exit(1)
+        
+        # 7. 启动主程序（传递history路径）
+        self.launch_main_script(history_path)
 
 
 def main():

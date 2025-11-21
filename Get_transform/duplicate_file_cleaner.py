@@ -601,8 +601,15 @@ def main():
     # 获取脚本所在目录
     script_dir = Path(__file__).parent.absolute()
     
-    # 配置相对路径
-    history_dir = script_dir / "history"
+    
+    # 获取history路径（优先使用环境变量，否则使用默认路径）
+    history_path = os.environ.get('GET_HISTORY_PATH')
+    if history_path:
+        history_dir = Path(history_path)
+    else:
+        history_dir = script_dir / "history"
+    
+    # 配置new目录路径
     new_dir = script_dir / "new"
     
     # 检查history目录是否存在
