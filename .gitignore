@@ -80,4 +80,9 @@ Thumbs.db
 # Project specific
 history/
 new/
+logs/
 file_cleaner_*.log
+
+# Configuration files (user-specific paths)
+.get_transform_config.json
+.get_transform_config.json.bak
