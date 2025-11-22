@@ -402,16 +402,40 @@ class DependencyChecker:
                 recovered, recovery_msg = config_manager.recover_from_corruption()
                 if recovered:
                     print(f"✅ {recovery_msg}")
+                    # 恢复成功后询问是否使用现有配置
+                    try:
+                        use_existing = input("\n配置已恢复，是否使用现有配置? (y/n): ").strip().lower()
+                    except EOFError:
+                        use_existing = 'y'
+                    need_init = use_existing not in ['y', 'yes', '是']
                 else:
                     print(f"❌ {recovery_msg}")
+                    need_init = True
             else:
-                # 配置文件不存在，创建默认配置
-                print("创建新的配置...")
-                config_manager.create_default_config()
-            
-            need_init = True
+                # 配置文件不存在，启动交互式向导
+                print("🎯 检测到首次运行，启动配置向导...")
+                from wizard import InteractiveWizard
+                wizard = InteractiveWizard(script_dir, config_manager)
+                
+                try:
+                    wizard_success = wizard.run()
+                    if not wizard_success:
+                        print("\n👋 向导未完成，程序退出")
+                        sys.exit(0)
+                    
+                    # 向导成功完成，重新加载配置
+                    config_loaded, _ = config_manager.load_config()
+                    need_init = False
+                    
+                except KeyboardInterrupt:
+                    print("\n\n👋 用户取消配置向导")
+                    sys.exit(0)
+                except Exception as e:
+                    print(f"\n❌ 配置向导运行失败: {e}")
+                    print("将使用传统初始化方式...")
+                    need_init = True
         
-        # 执行初始化流程
+        # 执行初始化流程（如果需要）
         if need_init:
             initializer = InitializationManager(script_dir, config_manager)
             try:
