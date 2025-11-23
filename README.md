@@ -7,366 +7,347 @@
 ![GitHub license](https://img.shields.io/github/license/yorickhui/Get_transform?style=for-the-badge&color=brightgreen)
 
 <p align="center">
-  <img src="/banner.png" width="600">
+  <img src="/banner.png" width="600" alt="Get_transform banner">
 </p>
 
 # Get_transform
-这是一款Get笔记导出文件处理脚本，让导出的Get笔记命名不再是乱码，方便导入其他笔记软件
+这是一款 Get 笔记导出文件处理工具，自动帮你从乱码命名的 HTML 导出中提取标题、删除重复内容，并输出可以直接导入 Notion/Obsidian 等应用的整洁文件。
 
-# 功能概述
-GET笔记是一款优秀的国产AI笔记软件，在移动端收集小红书、抖音内容作为笔记体验非常优秀，但是他的导出功能比较弱，导出的为一串字符命名的html无法直接导入Notion等其他笔记。
-为了方便自己同时使用GET和Notion笔记，方便在二者之间同步。我编写了这个脚本，有相同需求的同学可以复制使用
+> **一句话简介：** 导出 → 向导式初始化 → 智能清理 → 一键导入其他笔记平台。
 
+---
 
-## 功能特性
+## 目录
+1. [核心功能](#核心功能)
+2. [使用工作流](#使用工作流)
+3. [首次运行向导](#首次运行向导)
+4. [三种使用方式](#三种使用方式)
+5. [交互菜单与工作模式](#交互菜单与工作模式)
+6. [配置与自定义 (.get_transform_config.json)](#配置与自定义-get_transform_configjson)
+7. [跨平台使用说明](#跨平台使用说明)
+8. [打包 / 安装 / 构建](#打包--安装--构建)
+9. [故障排查 FAQ](#故障排查-faq)
+10. [文档索引](#文档索引)
+11. [版本信息 & 支持](#版本信息--支持)
 
-- **智能时间戳识别**: 自动解析文件夹名中的时间戳格式 (YYYYMMDDHHMM)
-- **版本排序**: 按时间戳自动排序，识别最新和历史版本
-- **重复文件检测**: 精确识别最新文件夹中与历史版本重复的文件
-- **安全删除机制**: 提供试运行、备份、确认等多重安全保障
-- **智能文件复制重命名**: 解析index.html中的标题映射，将HTML文件复制到指定目录并重命名为有意义的标题
+---
 
+## 核心功能
+- **智能时间戳识别**：自动解析 `voicenotes_YYYYMMDDHHMM_...` 文件夹，按时间排序版本。
+- **重复文件检测**：比较最新导出与历史版本，精准定位重复 HTML。
+- **安全操作模式**：试运行、正式运行、仅复制重命名三种模式，支持备份与日志。
+- **自动依赖管理**：`launch.py` 会自动检测 Python/pip，提示或安装 `beautifulsoup4` 等依赖。
+- **目录初始化向导**：首次运行自动创建 `history/`, `new/`, `logs/`，并验证自定义路径。
+- **配置持久化**：`.get_transform_config.json` 保存所有路径及默认模式，可随时修改。
+- **跨平台兼容**：使用 `pathlib`、UTF-8、文件名消毒算法，完整支持 Windows/macOS/Linux。
+- **PyInstaller 打包**：官方提供单文件可执行程序以及 Makefile/脚本，方便自定义构建与发布。
 
-## 使用方法
+---
 
-### 方式一：直接运行可执行文件（推荐，无需安装 Python）
-
-**适用于非技术用户，开箱即用！**
-
-1. **下载预构建的可执行文件**
-   - 前往 [Releases](https://github.com/yorickhui/Get_transform/releases) 页面
-   - 根据你的操作系统下载对应的文件：
-     - Windows: `get_transform.exe`
-     - macOS: `get_transform` (macOS)
-     - Linux: `get_transform` (Linux)
-
-2. **准备笔记文件**
-   - 从 GET笔记 导出笔记（导出为 HTML 格式）
-   - 解压导出的文件包
-
-3. **运行程序**
-   - **Windows**: 双击 `get_transform.exe` 运行
-   - **macOS/Linux**: 在终端中运行 `./get_transform`
-   
-4. **首次运行配置**
-   - 程序会引导你配置导出路径
-   - 按照提示完成设置即可
-
-5. **开始使用**
-   - 将导出的笔记文件夹放入 `history/` 目录
-   - 运行程序，选择操作模式
-   - 处理后的文件会保存在 `new/` 目录
-
-> **提示**: 
-> - 可执行文件包含所有依赖，无需安装 Python
-> - 首次运行会自动创建必要的目录
-> - 配置会自动保存，下次运行无需重新配置
-
-### 方式二：使用 Python 运行（开发者）
-
-**适用于技术用户和开发者**
-
-#### 快速安装
-
-**Linux/macOS:**
-```bash
-# 克隆仓库
-git clone https://github.com/yorickhui/Get_transform.git
-cd Get_transform
-
-# 运行安装脚本
-./scripts/install.sh
-
-# 启动程序
-./run.sh
+## 使用工作流
+```
+┌─────────────────────────────────────────────────────────────┐
+│ 1. 从 GET 笔记导出 HTML 并解压                               │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│ 2. 运行 Get_transform（可执行文件或 launch.py）               │
+│    ├─ 自动检查 Python / pip                                   │
+│    ├─ 自动安装 beautifulsoup4                                 │
+│    └─ 初始化 history/new/logs 目录并保存配置                  │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│ 3. 将解压后的导出文件夹放入 history/                         │
+│    示例：history/voicenotes_202511200930_getnotes_archive_xx │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│ 4. 选择运行模式                                             │
+│    [1] 试运行 → 仅预览                                       │
+│    [2] 正式运行 → 删除重复 + 复制新笔记                      │
+│    [3] 仅复制重命名 → 最安全                                │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│ 5. 在 new/ 中获取已重命名的 HTML，直接导入其他应用           │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-**Windows:**
+---
+
+## 首次运行向导
+1. **下载或克隆项目**
+   - 非技术用户：从 [Releases](https://github.com/yorickhui/Get_transform/releases) 下载对应平台的可执行文件。
+   - 开发者：`git clone https://github.com/yorickhui/Get_transform.git && cd Get_transform`。
+
+2. **执行启动脚本/可执行文件**
+   ```bash
+   # Linux/macOS
+   python Get_transform/launch.py
+
+   # Windows
+   py Get_transform\launch.py
+   ```
+   或在图形界面直接双击 `get_transform.exe`。
+
+3. **自动依赖安装**
+   - 检查 Python ≥ 3.6、pip 可用性。
+   - 从 `Get_transform/requirements.txt` 读取依赖，并询问是否自动安装。
+   - 失败时提供明确的手动安装命令和重试机制。
+
+4. **目录初始化**
+   - 自动创建脚本同级的 `history/`, `new/`, `logs/`。
+   - 支持自定义 GET 导出存放位置并实时校验。
+
+5. **配置向导**
+   - 成功初始化后将设置写入 `.get_transform_config.json`。
+   - 再次运行时会显示当前配置，并询问是否继续沿用。
+
+6. **环境变量传递**
+   - `GET_HISTORY_PATH / GET_NEW_PATH / GET_LOGS_PATH` 会传递到主程序，确保目录一致。
+
+> **提示**：任何时候都可以删除配置文件重新执行向导，或通过 `launch.py --force`（后续计划）重新初始化。
+
+---
+
+## 三种使用方式
+
+### 方式一：独立可执行文件（推荐）
+**面向非技术用户，无需安装 Python。**
+
+1. 前往 [Releases](https://github.com/yorickhui/Get_transform/releases) 下载：
+
+| 平台 | 文件名 | 运行方式 |
+|------|--------|----------|
+| Windows 10/11 | `get_transform.exe` | 双击或 `PowerShell> .\get_transform.exe` |
+| macOS 10.15+ | `get_transform_macos` | `chmod +x get_transform_macos && ./get_transform_macos` |
+| Linux (Ubuntu/Debian/Fedora 等) | `get_transform_linux` | `chmod +x get_transform_linux && ./get_transform_linux` |
+
+2. 首次运行即进入依赖检查和目录向导。
+3. 将导出的文件夹复制到可执行文件旁的 `history/`，按菜单提示操作即可。
+
+> **安全提示**：首次执行时若被 Windows Defender 或 macOS Gatekeeper 阻拦，请参见 [故障排查](#故障排查-faq)。
+
+### 方式二：Python + 安装脚本（推荐给动手用户）
+**脚本会自动创建虚拟环境、安装依赖并生成启动脚本。**
+
+**Linux/macOS**
+```bash
+./scripts/install.sh   # 自动创建 .venv 并安装依赖
+./run.sh               # 进入虚拟环境并执行 launch.py
+```
+
+**Windows**
 ```powershell
-# 克隆仓库
-git clone https://github.com/yorickhui/Get_transform.git
-cd Get_transform
-
-# 运行安装脚本
-.\scripts\install.ps1
-
-# 启动程序（双击或在 PowerShell 中运行）
-.\run.bat
+.\scripts\install.ps1  # 自动创建虚拟环境并安装依赖
+.\run.bat              # 双击或在 PowerShell 中运行
 ```
 
-#### 手动安装
+> 也可直接运行 `python Get_transform/launch.py`（需手动安装依赖）。
 
-**步骤1：准备工作**
-- 安装 Python 3.6+: https://www.python.org/
-- 克隆或下载本项目到你的电脑
+### 方式三：源码构建与开发
+**适合需要自定义或参与开发的用户。**
 
-**步骤2：进入项目目录**
-```bash
-cd /path/to/Get_transform
-```
+- **Makefile（Linux/macOS）**
+  ```bash
+  make help          # 查看所有命令
+  make build         # 构建 PyInstaller 可执行文件
+  make clean         # 清理 build/dist
+  make test          # 运行测试（包括 cross-platform suite）
+  make dist          # 构建 + 打包发布
+  ```
 
-**步骤3：安装依赖**
-```bash
-# 使用 pip 安装
-pip install -r Get_transform/requirements.txt
-```
+- **Shell/PowerShell 脚本**
+  ```bash
+  ./scripts/build.sh --install-deps --test
+  # 或
+  .\scripts\build.ps1 -InstallDeps -Test
+  ```
 
-**步骤4：运行程序**
-```bash
-# 推荐：使用启动脚本（会自动检查依赖）
-python Get_transform/launch.py
+- **Python 构建脚本**
+  ```bash
+  python scripts/build_executable.py --clean --install-pyinstaller --test
+  ```
 
-# 或直接运行主程序
-python Get_transform/duplicate_file_cleaner.py
-```
+- **手动运行**
+  ```bash
+  python Get_transform/duplicate_file_cleaner.py
+  ```
 
-### 方式三：构建你自己的可执行文件
+详见 [BUILD.md](BUILD.md) 与 [PACKAGING.md](PACKAGING.md)。
 
-**适用于想要自己构建的用户**
+---
 
-详细的构建说明请参阅 [BUILD.md](BUILD.md)。
-
-**快速构建:**
-
-```bash
-# Linux/macOS
-make build
-
-# 或使用脚本
-./scripts/build.sh --install-deps
-
-# Windows
-.\scripts\build.ps1 -InstallDeps
-```
-
-构建完成后，可执行文件位于 `dist/` 目录。
-
-### 2. 操作选项
-
-运行后会显示菜单：
-
-```
-请选择操作:
-1. 试运行 (查看将要删除的文件，不实际删除)
-2. 正式运行 (实际删除重复文件)
-3. 仅复制重命名 (不删除重复文件，仅将最新文件夹中的HTML文件复制到new目录并重命名)
+## 交互菜单与工作模式
+```text
+🌀 Get_transform 主菜单
+========================================
+1. 试运行        ── 不删除文件，仅打印将执行的操作
+2. 正式运行      ── 删除重复笔记 + 复制重命名
+3. 仅复制重命名  ── 不触碰历史版本，最安全
 4. 退出
+
+> 日志: logs/file_cleaner_20251123_101530.log
+> 默认模式: 可在配置中指定 default_mode
 ```
 
-### 3. 推荐流程
+- **试运行**：推荐在每次导入新导出后先执行，确认将要删除的文件。
+- **正式运行**：删除最新导出中的重复文件，保留唯一内容，并将所有新文件复制到 `new/`。
+- **仅复制重命名**：跳过删除逻辑，适合只想重命名的场景或首次使用。
+- **备份/跳过重复**：程序会在关键节点提供确认提示并写入日志。
 
-1. **先运行试运行模式**：选择选项 `1`，查看将要删除的文件列表
-2. **确认无误后正式运行**：选择选项 `2`，执行实际删除操作
-3. **仅需复制**：如果只想复制重命名文件而不删除重复文件，选择选项 `3`
-4. **选择是否备份**：正式运行时可选择是否创建备份
+---
 
-### 文件复制重命名功能
-- **自动解析**: 读取最新文件夹中的index.html，提取笔记标题与文件名的映射关系
-- **智能重命名**: 将HTML文件从哈希文件名重命名为有意义的标题
-- **目标目录**: 复制到脚本所在目录下的 `new` 文件夹
-- **文件名清理**: 自动处理特殊字符，确保文件名符合Windows文件系统要求
+## 配置与自定义 (.get_transform_config.json)
+- **位置**：默认存放在 `Get_transform/.get_transform_config.json`。
+- **自动生成**：首次运行 `launch.py` 或可执行文件时创建。
 
-#### 示例
-原文件: `9323c2f00816d6a7cfffabb9b8ea1ad5.html`
-重命名为: `太变态！这个AI工具从写代码到发推啥都能干.html`
-
-
-## 工作原理
-
-1. **时间戳识别**：从文件夹名称中提取时间戳（格式：`voicenotes_YYYYMMDDHHMM_...`）
-2. **版本排序**：按时间戳对文件夹进行排序，识别最新和旧版本
-3. **文件对比**：比较各版本 `notes/` 目录下的文件名
-4. **重复删除**：删除最新版本中与任何旧版本重复的文件
-
-## 技术细节
-
-- **语言**：Python 3.6+
-- **依赖**：beautifulsoup4（启动脚本会自动安装）
-- **兼容性**：Windows/Linux/macOS
-- **编码**：UTF-8，支持中文路径和文件名
-- **启动方式**：
-  - 推荐：`python Get_transform/launch.py`（自动检查环境和依赖）
-  - 直接：`python Get_transform/duplicate_file_cleaner.py`（需手动安装依赖）
-- **打包工具**：PyInstaller（用于构建独立可执行文件）
-
-## 打包与分发
-
-### 为非技术用户提供可执行文件
-
-本项目使用 PyInstaller 支持将 Python 代码打包成独立的可执行文件，无需安装 Python 环境即可运行。
-
-### 构建可执行文件
-
-#### 快速构建
-
-**Linux/macOS:**
-```bash
-# 使用 Makefile（最简单）
-make build
-
-# 或使用构建脚本
-./scripts/build.sh --install-deps
-
-# 或使用 Python 脚本
-python3 scripts/build_executable.py --install-pyinstaller
+### 示例配置
+```json
+{
+  "version": "1.0",
+  "history_dir": "/Users/you/Get_transform/history",
+  "new_dir": "/Users/you/Get_transform/new",
+  "logs_dir": "/Users/you/Get_transform/logs",
+  "default_mode": "copy_only"
+}
 ```
 
-**Windows:**
-```powershell
-# 使用 PowerShell 脚本（推荐）
-.\scripts\build.ps1 -InstallDeps
+| 字段 | 含义 | 允许值/示例 |
+|------|------|-------------|
+| `version` | 配置版本，会自动升级 | `"1.0"` |
+| `history_dir` | GET 导出目录 | 绝对路径，需可读 |
+| `new_dir` | 输出目录 | 默认与脚本同级 `new/` |
+| `logs_dir` | 日志目录 | 默认 `logs/` |
+| `default_mode` | 启动后默认选项 | `trial`, `run`, `copy_only` |
 
-# 或使用 Python 脚本
-python scripts\build_executable.py --install-pyinstaller
-```
+### 修改方式
+1. **通过向导**：删除配置文件或在启动时选择“重新配置”。
+2. **手动编辑**：直接修改 JSON，保存后重新运行即可。
+3. **环境变量覆盖**：运行前设置 `GET_HISTORY_PATH` 等变量，可用于 CI/自定义脚本。
 
-#### 构建输出
+### 最佳实践
+- 将 `history/` 设置在大容量磁盘，长期保留最近 2 次导出以便判重。
+- `logs/` 可指向 Dropbox/OneDrive，同步留痕更容易回溯。
+- 若需要多人共享，可将配置文件和 `history` 指向共享网络盘。
 
-构建成功后，可执行文件将位于 `dist/` 目录：
-- **Windows**: `dist/get_transform.exe`
-- **macOS/Linux**: `dist/get_transform`
+---
 
-可执行文件包含：
-- Python 解释器（嵌入式）
-- 所有依赖包（beautifulsoup4 等）
-- 项目代码
-
-用户只需运行这个文件即可，无需安装任何其他软件。
-
-#### 详细构建文档
-
-完整的构建说明、系统要求、常见问题等，请参阅 [BUILD.md](BUILD.md)。
-
-### 构建选项
-
-```bash
-# 清理后构建
-make clean && make build
-
-# 构建调试版本（包含更多调试信息）
-make build-debug
-
-# 构建并测试
-python3 scripts/build_executable.py --test
-
-# 查看所有可用命令
-make help
-```
-
-### 分发建议
-
-1. **版本标记**: 在 GitHub Releases 中为每个版本创建标签
-2. **多平台构建**: 分别在 Windows、macOS、Linux 上构建并上传
-3. **命名规范**: 
-   - `get_transform-v1.0-windows.exe`
-   - `get_transform-v1.0-macos`
-   - `get_transform-v1.0-linux`
-4. **校验和**: 提供 SHA256 校验和文件
-5. **使用说明**: 在 Release 说明中包含快速开始指南
-
-## 跨平台兼容性
-
-本工具已针对 Windows、macOS 和 Linux 平台进行全面优化，确保在不同操作系统上行为一致。
-
+## 跨平台使用说明
 ### 已验证平台
+| 平台 | 版本范围 | 备注 |
+|------|----------|------|
+| Windows | 10 / 11 (x64) | 支持长路径、Unicode，建议启用 UTF-8 Beta 功能 |
+| macOS | 10.15+ (Intel & Apple Silicon) | 需授予终端完整磁盘访问权限 |
+| Linux | Ubuntu 20.04+, Debian 10+, CentOS 7+, Arch, Fedora | 任何 UTF-8 locale 的主流发行版 |
 
-- ✅ **Windows 10/11**: 完整支持，包括长路径和 Unicode 文件名
-- ✅ **macOS 10.15+**: 完整支持，包括 APFS 文件系统
-- ✅ **Linux**: 完整支持各主流发行版（Ubuntu、Debian、CentOS 等）
+### 平台差异与命令
+- **Windows**
+  - 运行：`get_transform.exe` 或 `py Get_transform\launch.py`
+  - 建议通过 PowerShell 以管理员身份安装依赖。
+  - 启用长路径：`gpedit.msc > 计算机配置 > 管理模板 > 系统 > 文件系统 > 启用 Win32 长路径`。
 
-### 跨平台特性
+- **macOS**
+  - 首次运行可执行文件前：`chmod +x get_transform_macos`。
+  - 若提示“无法验证开发者”：系统设置 → 隐私与安全性 → 仍要打开。
+  - 终端需拥有“完全磁盘访问”以读取下载目录。
 
-#### 1. 路径处理
-- 统一使用 `pathlib.Path` 进行路径操作，自动适配不同系统的路径分隔符
-- 支持用户目录扩展（`~`）和相对路径自动转换
-- 正确处理 Windows UNC 路径和长路径（超过 260 字符）
+- **Linux**
+  - 确保 locale：`export LANG=en_US.UTF-8`。
+  - 若提示 `Permission denied`：`chmod +x dist/get_transform`。
+  - SELinux/ AppArmor 环境请允许运行自建可执行文件。
 
-#### 2. 文件名安全处理
-- **Windows 保留名**: 自动处理 CON、PRN、AUX、NUL、COM1-9、LPT1-9 等保留设备名
-- **非法字符过滤**: 移除或替换 `< > : " / \ | ? *` 和控制字符
-- **尾部字符处理**: 自动移除 Windows 不支持的尾部空格和点号
-- **路径长度限制**: 
-  - Windows: 自动截断超过 260 字符的路径
-  - macOS/Linux: 支持最长 4096 字符的路径
-- **文件名长度**: 智能截断超长文件名（默认限制 200 字节，保留 UTF-8 完整性）
+### 文件名与路径策略
+- `sanitize_filename` 自动处理 Windows 保留名（CON/PRN/AUX/NUL/COM1-9/LPT1-9）、非法字符和尾部空格。
+- 最长文件名限制 200 字节，保证在 UTF-8 下不截断字符。
+- Windows 路径总长自动留白 60+ 字节，避免 260 字符限制。
 
-#### 3. 字符编码支持
-- **UTF-8 编码**: 所有文件读写操作统一使用 UTF-8 编码
-- **非 ASCII 字符**: 完整支持中文、日文、韩文、俄文等各种 Unicode 字符
-- **字节安全截断**: 截断超长文件名时确保不破坏多字节 UTF-8 字符
-- **Windows 编码**: 正确处理 Windows 控制台的 GBK/UTF-16LE 编码问题
+---
 
-#### 4. 权限和错误处理
-- 自动检测和提示文件/目录权限问题
-- 跨平台权限测试（读/写/执行权限）
-- 友好的错误提示和修复建议
+## 打包 / 安装 / 构建
+- **PyInstaller 单文件方案**：配置见 `get_transform.spec`，默认启用 UPX，支持 `--onefile`。
+- **脚本与自动化**：
+  - `scripts/build_executable.py`：Python 构建入口，支持 `--clean --debug --test --install-pyinstaller`。
+  - `scripts/build.sh` / `scripts/build.ps1`：跨平台彩色输出脚本。
+  - `scripts/install.sh` / `scripts/install.ps1`：创建虚拟环境 + 启动脚本。
+  - `scripts/prepare_release.sh`：半自动发布流程（构建、测试、校验和、CHANGELOG 更新）。
+- **Makefile**：`make build`, `make clean`, `make test`, `make dist` 等命令覆盖完整开发周期。
+- **测试**：`python Get_transform/test_cross_platform.py` 验证文件名清理、平台工具。
+- **文档**：
+  - [BUILD.md](BUILD.md)：系统要求、四种构建方法、常见问题（>9 个场景）。
+  - [PACKAGING.md](PACKAGING.md)：为何选择 PyInstaller、性能指标、未来改进。
+  - [QUICKSTART.md](QUICKSTART.md)：面向非技术用户的下载、首次运行、FAQ 与技巧。
 
-### 常见问题排查
+---
 
-#### Windows 平台
+## 故障排查 FAQ
+1. **Python 版本过低**
+   - **症状**：启动脚本提示 “Python版本过低”。
+   - **解决**：安装 Python 3.8+ 并勾选 “Add Python to PATH”，重新运行 `launch.py`。
 
-**问题：路径包含中文时出错**
-- 解决：确保 Windows 系统区域设置支持 Unicode（控制面板 → 区域 → 管理 → 更改系统区域设置 → 勾选"使用 Unicode UTF-8 提供全球语言支持"）
+2. **找不到 pip**
+   - **症状**：启动脚本提示 “pip 不可用”。
+   - **解决**：重新安装 Python 或运行 `python -m ensurepip --upgrade`，之后再次执行。
 
-**问题：提示路径过长**
-- 解决：Windows 10 1607+ 可启用长路径支持
-  1. 打开组策略编辑器（gpedit.msc）
-  2. 计算机配置 → 管理模板 → 系统 → 文件系统
-  3. 启用"启用 Win32 长路径"
+3. **依赖安装失败**
+   - **症状**：`beautifulsoup4` 安装错误。
+   - **解决**：手动运行 `python -m pip install -r Get_transform/requirements.txt`，或切换到管理员/ sudo 权限，并考虑更换为清华/阿里云镜像。
 
-**问题：无法创建某些文件名**
-- 原因：文件名包含 Windows 保留名（如 CON、PRN）
-- 解决：程序会自动添加下划线前缀（如 `_CON.html`）
+4. **无法创建 history/new/logs**
+   - **症状**：初始化阶段出现权限错误。
+   - **解决**：确保目录位于当前用户可写位置（如 `~/Get_transform`），必要时 `sudo chown -R $USER`。
 
-#### macOS 平台
+5. **history 路径验证失败**
+   - **症状**：输入自定义路径后提示“不存在/无法读取”。
+   - **解决**：确认路径真实存在且包含导出的 `notes/` 与 `index.html`，或直接使用默认路径。
 
-**问题：权限被拒绝**
-- 解决：检查终端是否有完整磁盘访问权限
-  - 系统偏好设置 → 安全性与隐私 → 隐私 → 完整磁盘访问权限
-  - 添加终端应用
+6. **index.html 丢失或被修改**
+   - **症状**：重命名阶段日志提示 “未找到文件标题映射”。
+   - **解决**：确保导出的目录完整无缺，并不要移动 `index.html`；必要时重新导出。
 
-**问题：文件名大小写问题**
-- 注意：APFS 文件系统默认不区分大小写但保留大小写
-- 避免仅大小写不同的文件名
+7. **文件名冲突或路径过长**
+   - **症状**：复制阶段日志中出现 “文件名截断/冲突”。
+   - **解决**：程序会自动追加 `_1/_2` 后缀；若仍失败，请将项目放在路径较短的位置（如 `C:\Get_transform`）。
 
-#### Linux 平台
+8. **配置文件损坏**
+   - **症状**：启动时提示 “配置文件结构无效”。
+   - **解决**：系统会自动备份 `*.bak` 并生成默认配置；也可手动删除 `.get_transform_config.json` 重新运行。
 
-**问题：权限不足**
-- 解决：确保运行用户对目标目录有读写权限
-  ```bash
-  chmod -R u+rw /path/to/Get_transform
-  ```
+9. **Windows Defender 阻止 exe**
+   - **症状**：下载的可执行文件被标记为未知应用。
+   - **解决**：点击 “更多信息 → 仍要运行”，或将文件所在目录加入白名单；发布版暂未签名，属正常现象。
 
-**问题：文件系统编码问题**
-- 解决：确保系统 locale 设置为 UTF-8
-  ```bash
-  export LANG=en_US.UTF-8
-  export LC_ALL=en_US.UTF-8
-  ```
+10. **macOS “无法打开，因为来自未识别开发者”**
+    - **解决**：在终端执行 `xattr -d com.apple.quarantine ./get_transform_macos` 或在系统设置中允许运行。
 
-### 测试套件
+11. **Linux 权限不足**
+    - **症状**：`Permission denied`。
+    - **解决**：`chmod +x get_transform_linux` 或 `sudo chown -R $USER:$USER .` 并确认当前用户对 history/new 目录有写权限。
 
-本项目包含完整的跨平台兼容性测试套件，可以在不同平台上运行：
+12. **日志或输出目录在网络盘上不可写**
+    - **解决**：将 `logs_dir`/`new_dir` 指向本地磁盘，或在网络盘上授予写权限；可以通过配置文件/环境变量重定向。
 
-```bash
-python Get_transform/test_cross_platform.py
-```
+> 更多常见问题与解决方案请查看 [BUILD.md](BUILD.md) 与 [QUICKSTART.md](QUICKSTART.md)。
 
-测试覆盖：
-- ✅ 文件名清理和安全化
-- ✅ Windows 保留名处理
-- ✅ UTF-8 编码支持
-- ✅ 路径长度限制
-- ✅ 控制字符过滤
-- ✅ 权限检测
-- ✅ 平台特定功能
+---
 
-## 版本信息
+## 文档索引
+- [README](README.md)：项目概述（当前页面）。
+- [QUICKSTART.md](QUICKSTART.md)：面向非技术用户的详细图文指南。
+- [BUILD.md](BUILD.md)：构建/打包/安装的深度说明与常见问题。
+- [PACKAGING.md](PACKAGING.md)：PyInstaller 方案、优化、未来计划。
+- [CHANGELOG.md](CHANGELOG.md)：版本历史与升级指引。
+- [CROSS_PLATFORM_CHANGES.md](CROSS_PLATFORM_CHANGES.md)：跨平台实现细节（开发者参考）。
 
-- **版本**：1.0
-- **创建时间**：2025-10-24
-- **作者**：Yorick
+---
+
+## 版本信息 & 支持
+- **当前版本**：1.1.0（详见 [CHANGELOG](CHANGELOG.md)）
 - **许可证**：MIT
+- **作者**：Yorick (yorickhui@gmail.com)
+- **反馈渠道**：
+  - [GitHub Issues](https://github.com/yorickhui/Get_transform/issues)
+  - Email：yorickhui@gmail.com
 
-## 联系支持
-yorickhui@gmail.com
+如果这个工具对你有帮助，欢迎 ⭐Star、Fork、分享给朋友，也可以提交 PR 一起改进！
