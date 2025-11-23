@@ -29,39 +29,117 @@ GET笔记是一款优秀的国产AI笔记软件，在移动端收集小红书、
 
 ## 使用方法
 
-### 1. 基本使用
+### 方式一：直接运行可执行文件（推荐，无需安装 Python）
+
+**适用于非技术用户，开箱即用！**
+
+1. **下载预构建的可执行文件**
+   - 前往 [Releases](https://github.com/yorickhui/Get_transform/releases) 页面
+   - 根据你的操作系统下载对应的文件：
+     - Windows: `get_transform.exe`
+     - macOS: `get_transform` (macOS)
+     - Linux: `get_transform` (Linux)
+
+2. **准备笔记文件**
+   - 从 GET笔记 导出笔记（导出为 HTML 格式）
+   - 解压导出的文件包
+
+3. **运行程序**
+   - **Windows**: 双击 `get_transform.exe` 运行
+   - **macOS/Linux**: 在终端中运行 `./get_transform`
+   
+4. **首次运行配置**
+   - 程序会引导你配置导出路径
+   - 按照提示完成设置即可
+
+5. **开始使用**
+   - 将导出的笔记文件夹放入 `history/` 目录
+   - 运行程序，选择操作模式
+   - 处理后的文件会保存在 `new/` 目录
+
+> **提示**: 
+> - 可执行文件包含所有依赖，无需安装 Python
+> - 首次运行会自动创建必要的目录
+> - 配置会自动保存，下次运行无需重新配置
+
+### 方式二：使用 Python 运行（开发者）
+
+**适用于技术用户和开发者**
+
+#### 快速安装
+
+**Linux/macOS:**
+```bash
+# 克隆仓库
+git clone https://github.com/yorickhui/Get_transform.git
+cd Get_transform
+
+# 运行安装脚本
+./scripts/install.sh
+
+# 启动程序
+./run.sh
+```
+
+**Windows:**
+```powershell
+# 克隆仓库
+git clone https://github.com/yorickhui/Get_transform.git
+cd Get_transform
+
+# 运行安装脚本
+.\scripts\install.ps1
+
+# 启动程序（双击或在 PowerShell 中运行）
+.\run.bat
+```
+
+#### 手动安装
+
 **步骤1：准备工作**
-请先安装Python，下载请至https://www.python.org/
-然后从Github下载Get_transform文件夹复制到你电脑任意位置
-自己在Get_transform文件夹内新建二个空文件夹 history 和 new ，注意都是小写
-history：用于存储Get笔记导出的文件
-new：用于存储重命名后的文件
+- 安装 Python 3.6+: https://www.python.org/
+- 克隆或下载本项目到你的电脑
 
-**步骤2：导出笔记复制到history目录下**
-将Get笔记导出的文件解压，将笔记文件夹（如：voicenotes_202510171604_getnotes_archive_1a3c7e29c001780cSbq7Nd0C）完整粘贴到history目录下。注意需要包含notes文件夹和index.html
-首次使用，如果history下只有一个文件夹，运行程序会将文件夹中所有的HTML重命名并保存到new文件中，
-不要删除history下的历史文件，请至少保留你上次导出的笔记文件夹。当你有了新的笔记再导出GET笔记，可以将新的笔记文件夹同样复制到history下，history下如果有多个笔记文件夹，程序会对比最新的2个文件夹，只将新增的笔记内容进行重命名。
-
-**步骤3：打开终端**
-在Mac电脑打开终端，在window电脑打开powershell
-
-**步骤4：进入项目目录**
-```把下面地址替换成你的存放目录，在powershell中运行以下命令
-cd "c:\Your_file\Get_transform"
+**步骤2：进入项目目录**
+```bash
+cd /path/to/Get_transform
 ```
-**步骤5：运行启动脚本（推荐）**
-```在powershell中运行以下命令
+
+**步骤3：安装依赖**
+```bash
+# 使用 pip 安装
+pip install -r Get_transform/requirements.txt
+```
+
+**步骤4：运行程序**
+```bash
+# 推荐：使用启动脚本（会自动检查依赖）
 python Get_transform/launch.py
-```
-启动脚本会自动检查Python版本、安装缺失的依赖，然后启动主程序。
 
-**或者直接运行主程序**
-```在powershell中运行以下命令
+# 或直接运行主程序
 python Get_transform/duplicate_file_cleaner.py
 ```
-> **注意**：直接运行主程序需要确保已安装Python 3.6+和beautifulsoup4依赖包。
 
-> **注意**：请确保已安装Python 3.6+，并且Python已添加到系统PATH环境变量中。
+### 方式三：构建你自己的可执行文件
+
+**适用于想要自己构建的用户**
+
+详细的构建说明请参阅 [BUILD.md](BUILD.md)。
+
+**快速构建:**
+
+```bash
+# Linux/macOS
+make build
+
+# 或使用脚本
+./scripts/build.sh --install-deps
+
+# Windows
+.\scripts\build.ps1 -InstallDeps
+```
+
+构建完成后，可执行文件位于 `dist/` 目录。
 
 ### 2. 操作选项
 
@@ -109,6 +187,82 @@ python Get_transform/duplicate_file_cleaner.py
 - **启动方式**：
   - 推荐：`python Get_transform/launch.py`（自动检查环境和依赖）
   - 直接：`python Get_transform/duplicate_file_cleaner.py`（需手动安装依赖）
+- **打包工具**：PyInstaller（用于构建独立可执行文件）
+
+## 打包与分发
+
+### 为非技术用户提供可执行文件
+
+本项目使用 PyInstaller 支持将 Python 代码打包成独立的可执行文件，无需安装 Python 环境即可运行。
+
+### 构建可执行文件
+
+#### 快速构建
+
+**Linux/macOS:**
+```bash
+# 使用 Makefile（最简单）
+make build
+
+# 或使用构建脚本
+./scripts/build.sh --install-deps
+
+# 或使用 Python 脚本
+python3 scripts/build_executable.py --install-pyinstaller
+```
+
+**Windows:**
+```powershell
+# 使用 PowerShell 脚本（推荐）
+.\scripts\build.ps1 -InstallDeps
+
+# 或使用 Python 脚本
+python scripts\build_executable.py --install-pyinstaller
+```
+
+#### 构建输出
+
+构建成功后，可执行文件将位于 `dist/` 目录：
+- **Windows**: `dist/get_transform.exe`
+- **macOS/Linux**: `dist/get_transform`
+
+可执行文件包含：
+- Python 解释器（嵌入式）
+- 所有依赖包（beautifulsoup4 等）
+- 项目代码
+
+用户只需运行这个文件即可，无需安装任何其他软件。
+
+#### 详细构建文档
+
+完整的构建说明、系统要求、常见问题等，请参阅 [BUILD.md](BUILD.md)。
+
+### 构建选项
+
+```bash
+# 清理后构建
+make clean && make build
+
+# 构建调试版本（包含更多调试信息）
+make build-debug
+
+# 构建并测试
+python3 scripts/build_executable.py --test
+
+# 查看所有可用命令
+make help
+```
+
+### 分发建议
+
+1. **版本标记**: 在 GitHub Releases 中为每个版本创建标签
+2. **多平台构建**: 分别在 Windows、macOS、Linux 上构建并上传
+3. **命名规范**: 
+   - `get_transform-v1.0-windows.exe`
+   - `get_transform-v1.0-macos`
+   - `get_transform-v1.0-linux`
+4. **校验和**: 提供 SHA256 校验和文件
+5. **使用说明**: 在 Release 说明中包含快速开始指南
 
 ## 跨平台兼容性
 
