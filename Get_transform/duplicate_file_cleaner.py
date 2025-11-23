@@ -20,21 +20,26 @@ from typing import List, Tuple, Dict, Set
 from bs4 import BeautifulSoup
 
 class DuplicateFileCleaner:
-    def __init__(self, history_dir: str, new_dir: str = None):
+    def __init__(self, history_dir: str, new_dir: str = None, logs_dir: str = None):
         """
         初始化文件清理器
         
         Args:
             history_dir: history目录的路径
             new_dir: 复制文件的目标目录，默认为history目录同级的new目录
+            logs_dir: 日志目录，默认为history目录同级的logs目录
         """
         self.history_dir = Path(history_dir)
         self.new_dir = Path(new_dir) if new_dir else self.history_dir.parent / "new"
+        self.logs_dir = Path(logs_dir) if logs_dir else self.history_dir.parent / "logs"
         self.setup_logging()
         
     def setup_logging(self):
         """设置日志记录"""
-        log_file = self.history_dir.parent / f"file_cleaner_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
+        # 确保日志目录存在
+        self.logs_dir.mkdir(parents=True, exist_ok=True)
+        
+        log_file = self.logs_dir / f"file_cleaner_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
         
         logging.basicConfig(
             level=logging.INFO,
@@ -154,27 +159,72 @@ class DuplicateFileCleaner:
         
         return file_title_map
     
-    def sanitize_filename(self, title: str) -> str:
+    def sanitize_filename(self, title: str, max_length: int = 200) -> str:
         """
-        清理文件名，移除不合法的字符
+        清理文件名，移除不合法的字符，确保跨平台兼容性
         
         Args:
             title: 原始标题
+            max_length: 文件名最大长度（不包含扩展名），默认200
             
         Returns:
             清理后的文件名
         """
-        # 移除或替换不合法的文件名字符
-        illegal_chars = r'[<>:"/\\|?*]'
-        sanitized = re.sub(illegal_chars, '_', title)
+        import platform
         
-        # 移除多余的空格和点
-        sanitized = re.sub(r'\s+', ' ', sanitized).strip()
-        sanitized = sanitized.replace('..', '.')
+        # 先处理空白字符（合并连续空格/制表符等为单个空格）
+        sanitized = re.sub(r'\s+', ' ', title).strip()
         
-        # 限制文件名长度
-        if len(sanitized) > 200:
-            sanitized = sanitized[:200]
+        # 移除或替换不合法的文件名字符（Windows和Unix通用）
+        # Windows: < > : " / \ | ? *
+        # Unix: /
+        # 控制字符: \x00-\x1f（注意：\x09(tab), \x0a(LF), \x0d(CR)已被上面处理）
+        illegal_chars = r'[<>:"/\\|?*\x00-\x08\x0b-\x0c\x0e-\x1f]'
+        sanitized = re.sub(illegal_chars, '_', sanitized)
+        
+        # 移除多余的点号
+        sanitized = re.sub(r'\.{2,}', '.', sanitized)
+        
+        # Windows保留名检查（CON, PRN, AUX, NUL, COM1-9, LPT1-9）
+        # 这些名称在Windows上即使有扩展名也是非法的
+        windows_reserved = {
+            'CON', 'PRN', 'AUX', 'NUL',
+            'COM1', 'COM2', 'COM3', 'COM4', 'COM5', 'COM6', 'COM7', 'COM8', 'COM9',
+            'LPT1', 'LPT2', 'LPT3', 'LPT4', 'LPT5', 'LPT6', 'LPT7', 'LPT8', 'LPT9'
+        }
+        
+        # 检查文件名（不含扩展名）是否为Windows保留名
+        name_without_ext = sanitized.split('.')[0].upper()
+        if name_without_ext in windows_reserved:
+            sanitized = f"_{sanitized}"  # 添加前缀使其合法
+        
+        # Windows不允许文件名以空格或点结尾
+        # Unix允许，但为了跨平台兼容性统一处理
+        sanitized = sanitized.rstrip('. ')
+        
+        # 如果清理后为空，使用默认名称
+        if not sanitized:
+            sanitized = "untitled"
+        
+        # 限制文件名长度（考虑多字节UTF-8字符）
+        # Windows路径总长限制260字符，留出余量给路径部分
+        if len(sanitized.encode('utf-8')) > max_length:
+            # 按字节截断，确保不破坏UTF-8字符
+            sanitized_bytes = sanitized.encode('utf-8')[:max_length]
+            # 尝试解码，如果失败则继续截断直到成功
+            while len(sanitized_bytes) > 0:
+                try:
+                    sanitized = sanitized_bytes.decode('utf-8')
+                    break
+                except UnicodeDecodeError:
+                    sanitized_bytes = sanitized_bytes[:-1]
+            
+            # 再次移除可能的尾部空格和点
+            sanitized = sanitized.rstrip('. ')
+        
+        # 最终验证：确保不为空
+        if not sanitized:
+            sanitized = "untitled"
         
         return sanitized
     
